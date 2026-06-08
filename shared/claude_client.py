@@ -74,28 +74,35 @@ class ClaudeClient:
         system: str,
         user: str,
         max_tokens: int = DEFAULT_MAX_TOKENS,
-        temperature: float = 0.2,
+        temperature: float | None = None,
         model: str | None = None,
     ) -> ClaudeResponse:
         """Run a single-turn completion and return the text plus usage.
 
         `system` is the canonical prompt (load it from `prompts/`); `user` is the
-        content to act on (e.g. concatenated document text). Temperature defaults
-        low because these tools value faithful, grounded output over creativity.
+        content to act on (e.g. concatenated document text).
+
+        `temperature` is omitted by default: the pinned model (Opus 4.8) removed
+        the sampling parameters and returns a 400 if `temperature`/`top_p`/`top_k`
+        are sent. Pass a value only when targeting an older model that still
+        accepts it.
         """
         if not system.strip():
             raise ValueError("system prompt is empty — load it from prompts/.")
         if not user.strip():
             raise ValueError("user content is empty — nothing to send to the model.")
 
+        params: dict = {
+            "model": model or self.model,
+            "max_tokens": max_tokens,
+            "system": system,
+            "messages": [{"role": "user", "content": user}],
+        }
+        if temperature is not None:
+            params["temperature"] = temperature
+
         try:
-            message = self._client.messages.create(
-                model=model or self.model,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                system=system,
-                messages=[{"role": "user", "content": user}],
-            )
+            message = self._client.messages.create(**params)
         except anthropic.APIError as exc:  # rate limit, overloaded, auth, etc.
             raise RuntimeError(f"Anthropic API call failed: {exc}") from exc
 
