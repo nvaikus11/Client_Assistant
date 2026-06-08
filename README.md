@@ -1,5 +1,7 @@
 # Client Assistant — AI Tools Workspace
 
+[![tests](https://github.com/nvaikus11/Client_Assistant/actions/workflows/tests.yml/badge.svg)](https://github.com/nvaikus11/Client_Assistant/actions/workflows/tests.yml)
+
 A personal workspace of standalone AI tools that assist with consulting delivery.
 Each tool is an independent agent built on the [Anthropic API](https://docs.anthropic.com/).
 
