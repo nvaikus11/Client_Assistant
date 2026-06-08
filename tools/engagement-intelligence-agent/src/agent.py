@@ -40,6 +40,69 @@ MODES: dict[str, str] = {
 }
 VALID_MODES = set(MODES.values())
 
+# --- Model selection ---------------------------------------------------------
+# Available models. UI label -> model id; None means "Auto (by complexity)".
+OPUS = "claude-opus-4-8"
+SONNET = "claude-sonnet-4-6"
+HAIKU = "claude-haiku-4-5"
+
+MODEL_CHOICES: dict[str, str | None] = {
+    "Auto (by complexity)": None,
+    "Opus 4.8 — most capable": OPUS,
+    "Sonnet 4.6 — balanced": SONNET,
+    "Haiku 4.5 — fast & low-cost": HAIKU,
+}
+
+# Strategic / generative modes always warrant the most capable model.
+_COMPLEX_MODES = {"DEFAULT", "FRAMING", "TALK TRACK", "ARTIFACT", "RISK/OPP",
+                  "DEEP DIVE", "SLIDES"}
+# Lighter modes (extraction / recall) can use a cheaper tier when context is small.
+_LIGHT_MODES = {"BRIEF", "RECAP", "DISCOVERY"}
+
+# Rough token estimate from character count (≈4 chars/token). Good enough to pick
+# a tier; not used for billing. Haiku caps at 200K context, the others at 1M.
+_HAIKU_CTX_CEILING = 180_000
+_SONNET_CTX_THRESHOLD = 60_000   # above this, a light task has enough to warrant Opus
+_HAIKU_CTX_THRESHOLD = 4_000     # below this, a light task is simple enough for Haiku
+
+
+def estimate_tokens(text: str) -> int:
+    return max(1, len(text) // 4)
+
+
+def choose_model(mode: str, engagement: Engagement) -> tuple[str, str]:
+    """Pick a model from task complexity. Returns (model_id, human reason).
+
+    Heuristic, transparent, and overridable in the UI:
+    - Strategic/generative modes → Opus 4.8 (quality matters most).
+    - Light modes → Haiku (tiny context) / Sonnet (moderate) / Opus (very large).
+    """
+    mode = mode.strip().upper()
+    ctx = estimate_tokens(engagement.to_prompt())
+    ctx_str = f"~{ctx:,} tokens of context"
+
+    if mode in _COMPLEX_MODES:
+        return OPUS, f"Auto → Opus 4.8: '{mode}' is a strategic/generative task ({ctx_str})."
+
+    # Light modes scale with how much material there is to work through.
+    if ctx <= _HAIKU_CTX_THRESHOLD:
+        return HAIKU, f"Auto → Haiku 4.5: '{mode}' over a small set of docs ({ctx_str})."
+    if ctx <= _SONNET_CTX_THRESHOLD:
+        return SONNET, f"Auto → Sonnet 4.6: '{mode}' over a moderate set of docs ({ctx_str})."
+    return OPUS, f"Auto → Opus 4.8: '{mode}' over a large set of docs ({ctx_str})."
+
+
+def resolve_model(choice: str | None, mode: str, engagement: Engagement) -> tuple[str, str]:
+    """Resolve a UI model choice (a model id, or None for Auto) to (id, reason)."""
+    if choice is None:
+        return choose_model(mode, engagement)
+    return choice, f"Manual selection: {choice}."
+
+
+def load_prompt() -> str:
+    """The canonical system prompt (extracted from the prompt markdown)."""
+    return load_system_prompt(PROMPT_PATH)
+
 
 @dataclass
 class GenerationResult:
