@@ -77,6 +77,19 @@ See [`clients/README.md`](clients/README.md) for the per-engagement folder model
 - **No client data or secrets in git** — engagements live in gitignored `clients/<name>/`, keys in `.env`.
 - **Never fabricate client specifics** — if a fact isn't in the provided documents, flag it as a gap.
 
+## Development
+
+```bash
+pip install -r requirements-dev.txt     # test runner
+pytest                                   # run the suite (shared/ + gitignore safety)
+./scripts/install-hooks.sh               # one-time: enable the pre-commit hook
+```
+
+The `tests/` suite covers the shared layer and includes a **gitignore-safety test**
+that fails if `.env` or client data would ever be tracked. A **pre-commit hook**
+(`githooks/pre-commit`, activated via `core.hooksPath`) runs `pytest` before each
+commit and blocks it on failure. Bypass in a pinch with `git commit --no-verify`.
+
 ## Adding a new tool
 
 1. Create `tools/<name>/` with `src/` and its own `CLAUDE.md` (code only — no client data).

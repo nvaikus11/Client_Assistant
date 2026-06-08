@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Pre-commit hook: run the test suite and block the commit if it fails.
+#
+# Activated via a tracked hooks directory so it travels with the repo:
+#   git config core.hooksPath githooks      (or: scripts/install-hooks.sh)
+#
+# Bypass in a pinch with:  git commit --no-verify
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+# If the test runner isn't installed, warn and let the commit through rather than
+# hard-blocking a fresh clone that hasn't installed dev deps yet.
+if ! python3 -c "import pytest" >/dev/null 2>&1; then
+  echo "pre-commit: pytest not installed — skipping tests."
+  echo "            enable with: pip install -r requirements-dev.txt"
+  exit 0
+fi
+
+echo "pre-commit: running pytest…"
+if ! python3 -m pytest -q; then
+  echo
+  echo "pre-commit: tests FAILED — commit aborted."
+  echo "            fix the tests, or bypass with: git commit --no-verify"
+  exit 1
+fi
+echo "pre-commit: tests passed ✓"
