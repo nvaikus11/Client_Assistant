@@ -19,7 +19,9 @@ SOW / RFP / supporting docs — producing briefs, talk tracks, and slide outline
 
 ## Setup
 
-Requires **Python 3.11+**.
+Requires **Python 3.11+**. Moving to a new machine (e.g. a work laptop)? See
+**[SETUP.md](SETUP.md)** for fresh-machine bring-up, corporate-proxy notes, and the
+client-data governance checklist.
 
 ```bash
 # 1. Create and activate a virtual environment
