@@ -1,0 +1,4 @@
+# Development-only dependencies (test runner). Not needed to run the tools.
+#   pip install -r requirements-dev.txt
+#   pytest
+pytest>=8.0.0
