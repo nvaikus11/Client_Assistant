@@ -1,0 +1,41 @@
+# --- Secrets & config ---------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# --- Client data (NEVER commit) -----------------------------------------------
+# Each engagement lives in clients/<name>/ with inputs/ meetings/ outputs/.
+# Treat both the client NAMES and their data as private: ignore everything under
+# clients/ ...
+clients/*
+# ...except the onboarding template (folder placeholders) and the guide, which
+# carry no client specifics and define the shape every engagement is copied from.
+!clients/README.md
+!clients/_template/
+!clients/_template/**
+
+# --- Python -------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Virtual environments -----------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+
+# --- Editors & OS -------------------------------------------------------------
+.DS_Store
+.idea/
+.vscode/
+*.swp
