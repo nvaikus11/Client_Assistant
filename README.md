@@ -74,6 +74,24 @@ python tools/engagement-intelligence-agent/src/main.py --client acme-corp \
 Artifacts are written to `clients/acme-corp/outputs/<timestamp>-<mode>.md`.
 See [`clients/README.md`](clients/README.md) for the per-engagement folder model.
 
+### Option C — no Anthropic API key (run inside Claude Code)
+
+Options A and B call the Anthropic API directly. On a machine where that isn't
+permitted but **Claude Code is licensed**, run the agent inside Claude Code instead —
+it reads the files itself, so there's no API key and no blocked endpoint:
+
+```text
+# open this repo in Claude Code, then:
+/prep aurora-grocery-demo RECAP   prep for the June 10 steering committee
+/prep acme-corp                   # default brief pack
+/prep                             # lists clients and asks which to prep
+```
+
+The `/prep` command ([`.claude/commands/prep.md`](.claude/commands/prep.md)) loads the
+canonical prompt and the client's folders, produces the brief / recap / talk track /
+etc., and offers to save it to the client's `outputs/`. Same prompt, same folder model,
+same grounding — just running on enterprise Claude Code rather than a personal key.
+
 ## Ground rules (summary)
 
 - **Anthropic API only** — no other model providers or orchestration frameworks.
