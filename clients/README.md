@@ -9,14 +9,18 @@ time — they're auto-discovered and included as context with no code change.
 
 ```
 clients/
-├── _template/            ← the shape every engagement is copied from (tracked in git)
-│   ├── sow-rfp/          ← SOW, RFP, proposals
-│   ├── meeting-summaries/← summaries / transcripts (date-stamp filenames)
-│   ├── exec-updates/     ← executive updates
-│   ├── other/            ← anything else
-│   └── outputs/          ← generated briefs / talk tracks / slide outlines
-└── <client-name>/        ← one per client (gitignored — names AND data stay local)
+├── _template/              ← the shape every engagement is copied from (tracked in git)
+│   ├── sow/                ← Statement(s) of Work
+│   ├── rfp/                ← RFP / proposal documents
+│   ├── meeting-transcripts/← transcripts / summaries (date-stamp filenames)
+│   ├── status-updates/     ← status / executive updates
+│   ├── misc/               ← anything else
+│   └── outputs/            ← generated briefs / talk tracks / slide outlines
+└── <client-name>/          ← one per client (gitignored — names AND data stay local)
 ```
+
+> The five folders above are the **minimum**. Add any folder you like
+> (e.g. `technical-specs/`, `pricing/`) — it's auto-discovered and included.
 
 ## Onboard a new client
 

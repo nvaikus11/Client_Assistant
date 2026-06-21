@@ -31,9 +31,10 @@ More tools will be added over time, so structure must scale to many tools.
 - `tools/<tool-name>/` — one folder per tool, each with its own `CLAUDE.md` and `src/`.
   Tools hold **code only** — no client data.
 - `clients/<name>/` — one folder per client engagement (gitignored), organized by
-  **material category**: `sow-rfp/`, `meeting-summaries/`, `exec-updates/`, `other/`,
-  plus `outputs/` (generated artifacts). Any extra subfolder is auto-discovered as a
-  category — no code change needed. Copied from `clients/_template/`. This separation is
+  **material category** (the five minimum): `sow/`, `rfp/`, `meeting-transcripts/`,
+  `status-updates/`, `misc/`, plus `outputs/` (generated artifacts). Any extra subfolder
+  is auto-discovered as a category — no code change needed. Copied from `clients/_template/`.
+  This separation is
   what lets the agents be replicated across clients: the tool is written once, the
   client folder is created per engagement.
 - `ui/` — local Streamlit control panel (`streamlit run ui/app.py`): pick a client,
@@ -46,8 +47,9 @@ The tools are client-agnostic; client material is passed in by folder. To run an
 against a new client:
 1. Onboard: `python scripts/new_client.py "Client Name"` (or the ➕ New client button in
    the UI) → creates `clients/<slug>/` from the template.
-2. Drop the client's files into the matching category folder (`sow-rfp/`,
-   `meeting-summaries/`, `exec-updates/`, `other/`, or a folder you add).
+2. Drop the client's files into the matching category folder (`sow/`, `rfp/`,
+   `meeting-transcripts/`, `status-updates/`, `misc/`, or a folder you add — extras are
+   auto-discovered).
 3. Generate via the UI, or run a tool with `--client <slug>`; artifacts land in
    `clients/<slug>/outputs/`.
 

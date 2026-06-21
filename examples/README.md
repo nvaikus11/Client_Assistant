@@ -15,14 +15,15 @@ same category folders the tool uses:
 
 ```
 aurora-grocery/
-├── sow-rfp/
-│   ├── AGG_Statement_of_Work_Phase1.md   # scope, deliverables, timeline, $1.2M, team
+├── sow/
+│   └── AGG_Statement_of_Work_Phase1.md   # scope, deliverables, timeline, $1.2M, team
+├── rfp/
 │   └── AGG_RFP_Excerpt.md                # the client's original ask + eval criteria
-├── meeting-summaries/                    # the "continuity" story (date-stamped)
+├── meeting-transcripts/                  # the "continuity" story (date-stamped)
 │   ├── 2026-04-08-kickoff.md             # platform + budget + go-live decided
 │   ├── 2026-04-29-architecture-review.md # batch vs real-time decided; ERP risk raised
 │   └── 2026-05-20-steering-committee.md  # MLflow chosen; CFO wants ROI; Phase 2 scope open
-└── exec-updates/
+└── status-updates/
     └── 2026-05-27-exec-status.md         # RAG status one-pager
 ```
 
@@ -33,10 +34,11 @@ track** for the next meeting (Steering #3 on June 10) really shows the tool off.
 ## Load it into a client (to run the demo)
 
 ```bash
-python scripts/new_client.py "Aurora Grocery (Demo)"     # -> clients/aurora-grocery-demo/
-cp examples/aurora-grocery/sow-rfp/*            clients/aurora-grocery-demo/sow-rfp/
-cp examples/aurora-grocery/meeting-summaries/*  clients/aurora-grocery-demo/meeting-summaries/
-cp examples/aurora-grocery/exec-updates/*       clients/aurora-grocery-demo/exec-updates/
+python scripts/new_client.py "Aurora Grocery (Demo)"       # -> clients/aurora-grocery-demo/
+cp examples/aurora-grocery/sow/*                 clients/aurora-grocery-demo/sow/
+cp examples/aurora-grocery/rfp/*                 clients/aurora-grocery-demo/rfp/
+cp examples/aurora-grocery/meeting-transcripts/* clients/aurora-grocery-demo/meeting-transcripts/
+cp examples/aurora-grocery/status-updates/*      clients/aurora-grocery-demo/status-updates/
 ```
 
 Then `streamlit run ui/app.py`, pick **aurora-grocery-demo**, and start a session.

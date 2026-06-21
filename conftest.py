@@ -17,8 +17,8 @@ ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-# Category folders the template ships with.
-TEMPLATE_CATEGORIES = ("sow-rfp", "meeting-summaries", "exec-updates", "other")
+# Category folders the template ships with (the five minimum categories).
+TEMPLATE_CATEGORIES = ("sow", "rfp", "meeting-transcripts", "status-updates", "misc")
 
 
 def build_template(clients_root: Path) -> Path:

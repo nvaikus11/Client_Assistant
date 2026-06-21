@@ -34,7 +34,7 @@ def test_create_client_scaffolds_categories(patched_clients):
     dest = patched_clients.create_client("Acme Corp")
     assert dest.name == "acme-corp"
     assert set(patched_clients.list_categories("acme-corp")) == {
-        "sow-rfp", "meeting-summaries", "exec-updates", "other"
+        "sow", "rfp", "meeting-transcripts", "status-updates", "misc"
     }
     # 'outputs' exists on disk but is never an input category
     assert (dest / "outputs").exists()
@@ -57,28 +57,28 @@ def test_list_clients_excludes_template(patched_clients):
 
 def test_save_upload_writes_file(patched_clients):
     patched_clients.create_client("Acme")
-    dest = patched_clients.save_upload("acme", "sow-rfp", "SOW.md", b"# scope")
+    dest = patched_clients.save_upload("acme", "sow", "SOW.md", b"# scope")
     assert dest.read_text() == "# scope"
-    assert [p.name for p in patched_clients.list_files("acme", "sow-rfp")] == ["SOW.md"]
+    assert [p.name for p in patched_clients.list_files("acme", "sow")] == ["SOW.md"]
 
 
 def test_save_upload_rejects_unsupported_type(patched_clients):
     patched_clients.create_client("Acme")
     with pytest.raises(ValueError):
-        patched_clients.save_upload("acme", "other", "malware.exe", b"x")
+        patched_clients.save_upload("acme", "misc", "malware.exe", b"x")
 
 
 def test_save_upload_strips_path_traversal(patched_clients):
     patched_clients.create_client("Acme")
-    dest = patched_clients.save_upload("acme", "other", "../../../evil.md", b"x")
+    dest = patched_clients.save_upload("acme", "misc", "../../../evil.md", b"x")
     # filename is reduced to its basename and stays inside the category folder
     assert dest.name == "evil.md"
-    assert dest.parent == patched_clients.client_dir("acme") / "other"
+    assert dest.parent == patched_clients.client_dir("acme") / "misc"
 
 
 def test_list_files_ignores_gitkeep(patched_clients):
     patched_clients.create_client("Acme")
-    assert patched_clients.list_files("acme", "other") == []  # only .gitkeep present
+    assert patched_clients.list_files("acme", "misc") == []  # only .gitkeep present
 
 
 # --- categories & outputs ----------------------------------------------------

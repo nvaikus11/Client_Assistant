@@ -11,10 +11,10 @@ TALK TRACK, DISCOVERY, RECAP, SLIDES, ARTIFACT, RISK/OPP, DEEP DIVE).
 
 ## How it works
 1. The client's material lives in `clients/<name>/` (gitignored), organized by category
-   folder: `sow-rfp/`, `meeting-summaries/`, `exec-updates/`, `other/` (and any folder
-   you add — auto-discovered).
+   folder: `sow/`, `rfp/`, `meeting-transcripts/`, `status-updates/`, `misc/` (and any
+   folder you add — auto-discovered).
 2. `shared/doc_parsing.load_engagement()` discovers every category folder, extracts and
-   labels the files, and orders meeting summaries oldest→newest so the agent can track
+   labels the files, and orders meeting transcripts oldest→newest so the agent can track
    the conversation over time.
 3. `shared/prompts.load_system_prompt()` loads the canonical prompt
    (`prompts/engagement-intelligence-agent-prompt.md`); `src/agent.py` adds the meeting

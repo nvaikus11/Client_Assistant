@@ -49,8 +49,8 @@ material category. Onboard a client once, then generate from the UI or the CLI.
 streamlit run ui/app.py        # opens http://localhost:8501
 ```
 
-Pick a client (or create one), drop files into the matching folder (SOW / RFP,
-Meeting summaries, Executive updates, Other — or add your own), choose what you need
+Pick a client (or create one), drop files into the matching folder (SOW, RFP,
+Meeting Transcripts, Status Updates, Misc — or add your own), choose what you need
 (Brief / Recap / Talk track / Slides / …), and click **Generate**. See
 [`ui/README.md`](ui/README.md).
 
@@ -61,8 +61,8 @@ Meeting summaries, Executive updates, Other — or add your own), choose what yo
 python scripts/new_client.py "Acme Corp"            # -> clients/acme-corp/
 
 # 2. Add the client's material to the matching category folder
-cp ~/path/to/SOW.pdf            clients/acme-corp/sow-rfp/
-cp ~/path/to/2026-06-03-sync.md clients/acme-corp/meeting-summaries/   # text transcripts
+cp ~/path/to/SOW.pdf            clients/acme-corp/sow/
+cp ~/path/to/2026-06-03-sync.md clients/acme-corp/meeting-transcripts/   # text transcripts
 
 # 3. Run the agent from the repo root
 python tools/engagement-intelligence-agent/src/main.py --client acme-corp \

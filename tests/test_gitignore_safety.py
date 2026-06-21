@@ -54,17 +54,17 @@ def fake_repo(tmp_path: Path) -> Path:
     # Shareable scaffold (must stay tracked)
     (tmp_path / "clients").mkdir()
     (tmp_path / "clients" / "README.md").write_text("guide")
-    for cat in ("sow-rfp", "meeting-summaries", "exec-updates", "other", "outputs"):
+    for cat in ("sow", "rfp", "meeting-transcripts", "status-updates", "misc", "outputs"):
         d = tmp_path / "clients" / "_template" / cat
         d.mkdir(parents=True)
         (d / ".gitkeep").touch()
 
     # A real client (name AND data must be ignored)
     acme = tmp_path / "clients" / "acme-corp"
-    (acme / "sow-rfp").mkdir(parents=True)
-    (acme / "sow-rfp" / "SOW.pdf").write_text("confidential scope of work")
-    (acme / "meeting-summaries").mkdir(parents=True)
-    (acme / "meeting-summaries" / "2026-06-03-vp-sync.md").write_text("private notes")
+    (acme / "sow").mkdir(parents=True)
+    (acme / "sow" / "SOW.pdf").write_text("confidential scope of work")
+    (acme / "meeting-transcripts").mkdir(parents=True)
+    (acme / "meeting-transcripts" / "2026-06-03-vp-sync.md").write_text("private notes")
     (acme / "outputs").mkdir(parents=True)
     (acme / "outputs" / "2026-06-07-brief.md").write_text("generated brief")
 
@@ -91,7 +91,7 @@ def test_template_and_readme_stay_tracked(fake_repo: Path):
     tracked = _tracked_files(fake_repo)
     # The whole point of the template is that it IS shared.
     assert "clients/README.md" in tracked
-    assert "clients/_template/sow-rfp/.gitkeep" in tracked
+    assert "clients/_template/sow/.gitkeep" in tracked
     assert "clients/_template/outputs/.gitkeep" in tracked
 
 

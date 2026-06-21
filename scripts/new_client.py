@@ -2,8 +2,8 @@
 """Onboard a new client by copying clients/_template into clients/<slug>.
 
 One command = "replicate the agent for another client". Produces a fresh,
-gitignored engagement folder with the category subfolders (sow-rfp,
-meeting-summaries, exec-updates, other) plus outputs/.
+gitignored engagement folder with the category subfolders (sow, rfp,
+meeting-transcripts, status-updates, misc) plus outputs/.
 
     python scripts/new_client.py "Acme Corp"      # -> clients/acme-corp/
     python scripts/new_client.py acme-corp
@@ -37,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(str(exc))
 
     slug = dest.name
-    print(f"Created clients/{slug}/  (sow-rfp/ meeting-summaries/ exec-updates/ other/ outputs/)")
+    print(f"Created clients/{slug}/  (sow/ rfp/ meeting-transcripts/ status-updates/ misc/ outputs/)")
     print("Next: drop the client's files into the category folders, then run a tool with")
     print(f"  --client {slug}   (or use the UI: streamlit run ui/app.py)")
     return 0

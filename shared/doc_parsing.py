@@ -8,12 +8,13 @@ tool labels documents the same way.
 An *engagement* (one client) is a folder of category subfolders:
 
     clients/<name>/
-        sow-rfp/            SOW / RFP / proposals
-        meeting-summaries/  summaries & transcripts (date-stamped filenames)
-        exec-updates/       executive updates
-        other/              anything else
-        outputs/            generated artifacts (NOT an input category)
-        <your-folder>/      add more anytime — auto-discovered as a category
+        sow/                 Statement(s) of Work
+        rfp/                 RFP / proposal documents
+        meeting-transcripts/ transcripts & summaries (date-stamped filenames)
+        status-updates/      status / executive updates
+        misc/                anything else
+        outputs/             generated artifacts (NOT an input category)
+        <your-folder>/       add more anytime — auto-discovered as a category
 
 `load_engagement()` discovers every subfolder except `outputs/`, parses the
 supported files inside, and returns an `Engagement` ready to drop into a prompt.
@@ -38,34 +39,36 @@ class DocType(str, Enum):
     DECK = "deck"
     NOTES = "notes"
     TRANSCRIPT = "transcript"
-    EXEC_UPDATE = "exec update"
+    STATUS_UPDATE = "status update"
     OTHER = "other"
 
 
 # The reserved output folder is never treated as an input category.
 OUTPUTS_DIRNAME = "outputs"
 
-# Category folder -> default DocType for files inside it. None means "infer per
-# file" (e.g. sow-rfp, where each file may be a SOW or an RFP). Unknown folders
-# default to OTHER, so user-added folders work with no code change.
+# Category folder -> default DocType for files inside it. Unknown folders default
+# to OTHER, so any folder you add later is auto-discovered and included with no
+# code change. These five are the minimum set the template ships with.
 CATEGORY_DOC_TYPES: dict[str, DocType | None] = {
-    "sow-rfp": None,
-    "meeting-summaries": DocType.TRANSCRIPT,
-    "exec-updates": DocType.EXEC_UPDATE,
-    "other": DocType.OTHER,
+    "sow": DocType.SOW,
+    "rfp": DocType.RFP,
+    "meeting-transcripts": DocType.TRANSCRIPT,
+    "status-updates": DocType.STATUS_UPDATE,
+    "misc": DocType.OTHER,
 }
 
 # Preferred display/order for known categories; others follow alphabetically.
-_CATEGORY_ORDER = ["sow-rfp", "meeting-summaries", "exec-updates", "other"]
+_CATEGORY_ORDER = ["sow", "rfp", "meeting-transcripts", "status-updates", "misc"]
 
 # Folders whose files should be ordered oldest -> newest by filename date.
-_DATE_ORDERED = {"meeting-summaries"}
+_DATE_ORDERED = {"meeting-transcripts"}
 
 _CATEGORY_LABELS = {
-    "sow-rfp": "SOW / RFP",
-    "meeting-summaries": "Meeting summaries",
-    "exec-updates": "Executive updates",
-    "other": "Other",
+    "sow": "SOW",
+    "rfp": "RFP",
+    "meeting-transcripts": "Meeting Transcripts",
+    "status-updates": "Status Updates",
+    "misc": "Misc",
 }
 
 
@@ -275,7 +278,7 @@ def load_engagement(clients_root: Path, client: str) -> Engagement:
     if not engagement.all_docs:
         raise ValueError(
             f"No documents found for client '{client}'. Add files to one of the "
-            f"category folders under {client_dir} (e.g. sow-rfp/, meeting-summaries/)."
+            f"category folders under {client_dir} (e.g. sow/, meeting-transcripts/)."
         )
     return engagement
 

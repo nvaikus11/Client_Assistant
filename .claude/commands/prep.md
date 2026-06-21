@@ -31,12 +31,13 @@ If no client slug was provided, list the subfolders of `clients/` (excluding
    - **Never surface a question or talking point that a prior meeting already
      answered.** Track decisions, commitments, and open threads across meetings.
 
-2. **Load the engagement.** Read every supported file (`.md .txt .pdf .docx .pptx`) under
-   `clients/<slug>/` across its category folders — typically `sow-rfp/`,
-   `meeting-summaries/`, `exec-updates/`, `other/` (skip `outputs/` and `.gitkeep`).
-   Use Glob to discover folders so any extra category is included. **Order
-   `meeting-summaries/` oldest → newest** by the `YYYY-MM-DD` date in each filename so you
-   can reason about how the engagement evolved. If a folder is empty, note it as a gap.
+2. **Load the engagement.** Read every supported file (`.md .txt .pdf`; also `.docx`/`.pptx`
+   if you can extract them) under `clients/<slug>/`. The five standard folders are
+   `sow/`, `rfp/`, `meeting-transcripts/`, `status-updates/`, `misc/` — but **use Glob to
+   discover ALL subfolders** (except `outputs/`) so any folder added later is included
+   automatically. Skip `.gitkeep` files. **Order `meeting-transcripts/` oldest → newest**
+   by the `YYYY-MM-DD` date in each filename so you can reason about how the engagement
+   evolved. If a folder is empty, note it as a gap.
 
 3. **Produce the requested output.** Run the named MODE, or the DEFAULT brief pack if none
    was given (short BRIEF → RECAP of what's settled vs. open → Manager-level FRAMING →

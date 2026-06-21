@@ -15,8 +15,8 @@ streamlit run ui/app.py                 # opens http://localhost:8501
 
 1. **Pick a client** in the sidebar, or create one with **➕ New client** (scaffolds
    `clients/<slug>/` from the template).
-2. **Drop files** (sidebar) into the matching material folder — SOW / RFP, Meeting
-   summaries, Executive updates, Other, or a folder you add. Uploads land in the
+2. **Drop files** (sidebar) into the matching material folder — SOW, RFP, Meeting
+   Transcripts, Status Updates, Misc, or a folder you add. Uploads land in the
    client's gitignored folder.
 3. **Start a session** — pick what you need first (Brief, Recap, Talk track, Slides,
    …), add a meeting objective/audience, and choose a **model** (see below). Every
