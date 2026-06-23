@@ -92,6 +92,11 @@ canonical prompt and the client's folders, produces the brief / recap / talk tra
 etc., and offers to save it to the client's `outputs/`. Same prompt, same folder model,
 same grounding — just running on enterprise Claude Code rather than a personal key.
 
+**Pull meetings from Granola automatically.** If you use [Granola](https://granola.ai),
+connect its MCP server to Claude Code and run `/sync-meetings <client>` to fetch your
+meeting notes straight into that client's `meeting-transcripts/` folder — no manual
+exporting. See [`docs/granola-sync.md`](docs/granola-sync.md).
+
 ## Ground rules (summary)
 
 - **Anthropic API only** — no other model providers or orchestration frameworks.
