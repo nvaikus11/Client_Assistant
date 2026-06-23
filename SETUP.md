@@ -73,18 +73,26 @@ pip install -r requirements.txt          # runtime: anthropic, streamlit, doc pa
 pip install -r requirements-dev.txt      # optional: pytest (to run the test suite)
 ```
 
-## 4. Configure your API key
+## 4. Choose a backend (with or without an API key)
 
 ```bash
 cp .env.example .env
 ```
 
-Then edit `.env` and set your key (this file is gitignored — never commit it):
+The app auto-detects how to reach Claude:
 
-```
-ANTHROPIC_API_KEY=sk-ant-...
-ANTHROPIC_MODEL=claude-opus-4-8
-```
+- **No API key needed** — if the **`claude` CLI** (Claude Code) is installed, leave
+  `ANTHROPIC_API_KEY` blank. The app routes generation through your existing Claude
+  Code login/license — no metered API billing. (Run the UI from a normal terminal,
+  not from inside a Claude Code session.)
+- **API key** — to use the metered Anthropic API instead, set it in `.env`:
+  ```
+  ANTHROPIC_API_KEY=sk-ant-...
+  ANTHROPIC_MODEL=claude-opus-4-8
+  ```
+
+Force a backend with `EIA_BACKEND=cli` or `EIA_BACKEND=api` in `.env`. The app shows
+the active backend at the top.
 
 ## 5. Run it
 
@@ -103,7 +111,7 @@ python tools/engagement-intelligence-agent/src/main.py --client <slug> \
 ## 6. (Optional) Developer setup
 
 ```bash
-pytest                             # should report 36 passed
+pytest                             # should report 45 passed
 ./scripts/install-hooks.sh         # enable the pre-commit hook (runs pytest on commit)
 ```
 

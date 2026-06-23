@@ -1,23 +1,30 @@
-"""Single Anthropic API wrapper shared by every tool in this workspace.
+"""Single Claude wrapper shared by every tool in this workspace.
 
 Why this exists: the workspace constitution (CLAUDE.md) requires that all
-API-calling logic live in `shared/` and that tools import it rather than each
+model-calling logic live in `shared/` and that tools import it rather than each
 constructing their own client. This keeps model choice, key handling, and error
-behavior consistent — and keeps us locked to the Anthropic API only.
+behavior consistent.
+
+Two backends, same interface:
+- **api** — the Anthropic API/SDK (`anthropic`). Used when `ANTHROPIC_API_KEY` is set.
+- **cli** — the local `claude` command (Claude Code). Used when there is no API key
+  but the `claude` CLI is installed. This runs on your existing Claude Code login /
+  enterprise license — no API key and no metered API billing.
+
+The backend is auto-detected (override with `EIA_BACKEND=api|cli`). Both are Claude;
+the CLI path is the Anthropic Claude Code tool, not a third-party provider.
 
 Usage:
     from shared.claude_client import ClaudeClient
-
-    client = ClaudeClient()
-    reply = client.complete(
-        system=Path("prompts/engagement-intelligence-agent-prompt.md").read_text(),
-        user="...document text...",
-    )
+    reply = ClaudeClient().complete(system=PROMPT, user="...document text...")
 """
 
 from __future__ import annotations
 
+import json
 import os
+import shutil
+import subprocess
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
@@ -35,6 +42,41 @@ except ModuleNotFoundError as exc:  # pragma: no cover - import guard
 DEFAULT_MODEL = "claude-opus-4-8"
 DEFAULT_MAX_TOKENS = 4096
 
+# Our pinned model ids -> Claude Code CLI aliases (`claude --model <alias>`).
+# Aliases are robust across CLI versions/licenses; unknown ids are passed through.
+_CLI_MODEL_ALIAS = {
+    "claude-opus-4-8": "opus",
+    "claude-opus-4-7": "opus",
+    "claude-sonnet-4-6": "sonnet",
+    "claude-haiku-4-5": "haiku",
+}
+
+
+def detect_backend() -> tuple[str | None, str]:
+    """Decide which backend to use from the environment, without constructing it.
+
+    Returns (backend, human-readable reason). backend is "api", "cli", or None
+    (nothing usable). Callers should `load_dotenv()` first. Override with
+    `EIA_BACKEND=api|cli`.
+    """
+    mode = os.environ.get("EIA_BACKEND", "auto").strip().lower()
+    has_key = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    has_cli = shutil.which("claude") is not None
+
+    if mode == "api":
+        return ("api", "Anthropic API (forced via EIA_BACKEND)") if has_key \
+            else (None, "EIA_BACKEND=api but ANTHROPIC_API_KEY is not set")
+    if mode == "cli":
+        return ("cli", "Claude Code CLI (forced via EIA_BACKEND)") if has_cli \
+            else (None, "EIA_BACKEND=cli but the `claude` CLI was not found on PATH")
+
+    # auto: prefer the API when a key is present, else fall back to the CLI.
+    if has_key:
+        return "api", "Anthropic API (ANTHROPIC_API_KEY found)"
+    if has_cli:
+        return "cli", "Claude Code CLI (no API key — using your Claude Code login)"
+    return None, "no ANTHROPIC_API_KEY and no `claude` CLI found"
+
 
 @dataclass
 class ClaudeResponse:
@@ -47,41 +89,58 @@ class ClaudeResponse:
     stop_reason: str | None
 
 
-class ClaudeClient:
-    """Thin, opinionated wrapper around the Anthropic Messages API.
+def _render_cli_prompt(system: str, messages: list[dict]) -> str:
+    """Flatten system + conversation into a single prompt for `claude -p`.
 
-    The key is read once from the environment (loaded from `.env`). We raise
-    immediately if it is missing rather than letting a confusing error surface
-    deep inside an API call.
+    The CLI is invoked statelessly per turn, so we render the whole conversation
+    each time (same as the API's stateless model).
     """
+    parts = [system.strip()]
+    if len(messages) == 1 and messages[0].get("role") == "user":
+        parts.append("\n\n---\n")
+        parts.append(messages[0]["content"])
+    else:
+        parts.append(
+            "\n\n---\nBelow is the conversation so far. Write ONLY the assistant's "
+            "next reply — no role labels, no preamble.\n"
+        )
+        for m in messages:
+            label = "USER" if m.get("role") == "user" else "ASSISTANT"
+            parts.append(f"\n[{label}]\n{m.get('content', '')}")
+        parts.append("\n[ASSISTANT]\n")
+    return "\n".join(parts)
+
+
+class ClaudeClient:
+    """Backend-agnostic Claude wrapper. Picks the API or the `claude` CLI."""
 
     def __init__(self, model: str | None = None) -> None:
         load_dotenv()  # no-op if there's no .env; real env vars still win
 
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key:
+        backend, reason = detect_backend()
+        if backend is None:
             raise RuntimeError(
-                "ANTHROPIC_API_KEY is not set. Add it to your .env file "
-                "(see .env.example). The workspace never hardcodes keys."
+                f"No Claude backend available: {reason}. Either add ANTHROPIC_API_KEY "
+                "to your .env, or install Claude Code (`claude`) to run without an API "
+                "key. Force one with EIA_BACKEND=api|cli."
             )
 
+        self.backend = backend
+        self.reason = reason
         self.model = model or os.environ.get("ANTHROPIC_MODEL", DEFAULT_MODEL)
-        self._client = anthropic.Anthropic(api_key=api_key)
+        self._client: anthropic.Anthropic | None = None
+        self._cli: str | None = None
+        if backend == "api":
+            self._client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        else:
+            self._cli = shutil.which("claude")
 
-    def _params(
-        self,
-        *,
-        system: str,
-        messages: list[dict],
-        max_tokens: int,
-        temperature: float | None,
-        model: str | None,
-    ) -> dict:
+    # --- shared param builder (API) -----------------------------------------
+    def _params(self, *, system, messages, max_tokens, temperature, model) -> dict:
         """Build the Messages API kwargs, omitting temperature by default.
 
-        The pinned model (Opus 4.8) removed the sampling parameters and returns a
-        400 if `temperature`/`top_p`/`top_k` are sent. We include `temperature`
-        only when a caller explicitly sets one (e.g. for an older model).
+        The pinned model (Opus 4.8) removed the sampling parameters and 400s if
+        `temperature`/`top_p`/`top_k` are sent; include it only if asked.
         """
         params: dict = {
             "model": model or self.model,
@@ -93,6 +152,7 @@ class ClaudeClient:
             params["temperature"] = temperature
         return params
 
+    # --- public interface ----------------------------------------------------
     def chat(
         self,
         *,
@@ -104,14 +164,16 @@ class ClaudeClient:
     ) -> ClaudeResponse:
         """Run a multi-turn (or single-turn) completion and return text + usage.
 
-        `messages` is the full conversation history as a list of
-        `{"role": ..., "content": ...}` dicts (the API is stateless — send it all
-        each turn). The first message must be `user`.
+        `messages` is the full conversation history (the call is stateless — send
+        it all each turn). The first message must be `user`.
         """
         if not system.strip():
             raise ValueError("system prompt is empty — load it from prompts/.")
         if not messages:
             raise ValueError("messages is empty — nothing to send to the model.")
+
+        if self.backend == "cli":
+            return self._chat_cli(system, messages, model)
 
         params = self._params(
             system=system, messages=messages, max_tokens=max_tokens,
@@ -139,17 +201,20 @@ class ClaudeClient:
         max_tokens: int = DEFAULT_MAX_TOKENS,
         temperature: float | None = None,
         model: str | None = None,
-    ) -> "ChatStream":
-        """Stream a multi-turn completion. Returns an iterable of text chunks.
+    ):
+        """Stream a completion. Returns an iterable of text chunks; after it's
+        exhausted, `.response` holds the final ClaudeResponse.
 
-        Iterate it to consume text deltas (e.g. Streamlit's `st.write_stream`);
-        after iteration completes, `.response` holds the final ClaudeResponse
-        (text + token usage). Streaming avoids HTTP timeouts on long inputs/outputs.
+        The API backend streams token-by-token. The CLI backend has no token
+        stream, so it yields the whole reply once (the caller can show a spinner).
         """
         if not system.strip():
             raise ValueError("system prompt is empty — load it from prompts/.")
         if not messages:
             raise ValueError("messages is empty — nothing to send to the model.")
+
+        if self.backend == "cli":
+            return CliChatStream(self, system, messages, model)
 
         params = self._params(
             system=system, messages=messages, max_tokens=max_tokens,
@@ -166,7 +231,7 @@ class ClaudeClient:
         temperature: float | None = None,
         model: str | None = None,
     ) -> ClaudeResponse:
-        """Single-turn convenience wrapper over `chat()` (used by the CLI)."""
+        """Single-turn convenience wrapper over `chat()` (used by the CLI tool)."""
         if not user.strip():
             raise ValueError("user content is empty — nothing to send to the model.")
         return self.chat(
@@ -177,13 +242,59 @@ class ClaudeClient:
             model=model,
         )
 
+    # --- CLI backend ---------------------------------------------------------
+    def _chat_cli(self, system: str, messages: list[dict], model: str | None) -> ClaudeResponse:
+        """Generate via the local `claude` CLI in headless print mode."""
+        prompt = _render_cli_prompt(system, messages)
+        alias = _CLI_MODEL_ALIAS.get(model or self.model)
+        cmd = [self._cli or "claude", "-p", "--output-format", "json"]
+        if alias:
+            cmd += ["--model", alias]
+
+        try:
+            proc = subprocess.run(
+                cmd, input=prompt, capture_output=True, text=True, timeout=600,
+            )
+        except FileNotFoundError as exc:
+            raise RuntimeError("`claude` CLI not found on PATH.") from exc
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError("The claude CLI timed out (>10 min).") from exc
+
+        if proc.returncode != 0:
+            err = (proc.stderr or proc.stdout or "").strip()
+            if "another Claude Code session" in err:
+                raise RuntimeError(
+                    "Can't call the claude CLI from inside a Claude Code session. "
+                    "Run `streamlit run ui/app.py` in a normal terminal instead."
+                )
+            raise RuntimeError(f"claude CLI failed (exit {proc.returncode}): {err}")
+
+        out = proc.stdout.strip()
+        try:
+            data = json.loads(out)
+        except json.JSONDecodeError:
+            if not out:
+                raise RuntimeError("claude CLI returned no output.")
+            return ClaudeResponse(text=out, model=alias or "claude",
+                                  input_tokens=0, output_tokens=0, stop_reason=None)
+
+        if data.get("is_error"):
+            raise RuntimeError(f"claude CLI error: {data.get('result') or data}")
+        usage = data.get("usage") or {}
+        return ClaudeResponse(
+            text=data.get("result") or "",
+            model=data.get("model") or alias or "claude (Claude Code)",
+            input_tokens=int(usage.get("input_tokens", 0) or 0),
+            output_tokens=int(usage.get("output_tokens", 0) or 0),
+            stop_reason=data.get("subtype"),
+        )
+
 
 class ChatStream:
-    """An iterable of text chunks from a streamed completion.
+    """Token stream from the API backend.
 
     Iterate to consume text deltas; after the iterator is exhausted, `.response`
-    holds the final ClaudeResponse (text + token usage). Designed to plug into
-    Streamlit's `st.write_stream`, which iterates it and returns the joined text.
+    holds the final ClaudeResponse. Designed for Streamlit's `st.write_stream`.
     """
 
     def __init__(self, client: "anthropic.Anthropic", params: dict) -> None:
@@ -208,3 +319,24 @@ class ChatStream:
             output_tokens=final.usage.output_tokens,
             stop_reason=final.stop_reason,
         )
+
+
+class CliChatStream:
+    """CLI backend 'stream': runs the `claude` CLI once and yields the whole reply.
+
+    Same shape as ChatStream so the UI code is identical — there's just no
+    token-by-token streaming, so callers should show a spinner.
+    """
+
+    def __init__(self, client: "ClaudeClient", system: str, messages: list[dict],
+                 model: str | None) -> None:
+        self._client = client
+        self._system = system
+        self._messages = messages
+        self._model = model
+        self.response: ClaudeResponse | None = None
+
+    def __iter__(self):
+        resp = self._client._chat_cli(self._system, self._messages, self._model)
+        self.response = resp
+        yield resp.text

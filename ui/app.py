@@ -14,7 +14,6 @@ Run from the repo root:
 from __future__ import annotations
 
 import importlib.util
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -28,7 +27,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from shared import clients as cfs  # noqa: E402
-from shared.claude_client import ClaudeClient  # noqa: E402
+from shared.claude_client import ClaudeClient, detect_backend  # noqa: E402
 from shared.doc_parsing import (  # noqa: E402
     SUPPORTED_SUFFIXES,
     category_label,
@@ -155,13 +154,21 @@ def _assistant_turn(state: dict, system: str) -> None:
                 system=system, messages=state["api_messages"],
                 model=state["model"], max_tokens=CHAT_MAX_TOKENS,
             )
-            text = st.write_stream(stream)
-        except Exception as exc:  # missing key, API error, etc.
+            if client.backend == "cli":
+                # No token stream from the CLI — show a spinner while it runs.
+                with st.spinner("Generating via Claude Code… (first reply can take ~30–60s)"):
+                    text = st.write_stream(stream)
+            else:
+                text = st.write_stream(stream)
+        except Exception as exc:  # missing backend, API/CLI error, etc.
             st.error(f"Generation failed: {exc}")
             return
         resp = stream.response
-        caption = (f"🧠 {resp.model} · {resp.input_tokens:,} in / "
-                   f"{resp.output_tokens:,} out tokens")
+        if resp.input_tokens or resp.output_tokens:
+            caption = (f"🧠 {resp.model} · {resp.input_tokens:,} in / "
+                       f"{resp.output_tokens:,} out tokens")
+        else:
+            caption = f"🧠 {resp.model}"
         st.caption(caption)
 
     state["api_messages"].append({"role": "assistant", "content": text})
@@ -276,9 +283,13 @@ def _chat(client: str) -> None:
 def main() -> None:
     st.title("🧭 Engagement Intelligence")
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        st.warning("ANTHROPIC_API_KEY is not set in .env — you can manage files, but "
-                   "generation will fail until you add it.")
+    backend, reason = detect_backend()
+    if backend is None:
+        st.warning(f"No Claude backend found — {reason}. Add ANTHROPIC_API_KEY to .env, "
+                   "or install Claude Code (`claude`) to run without an API key. You can "
+                   "still manage files.")
+    else:
+        st.caption(f"Backend: {reason}")
 
     client = _sidebar()
     if not client:

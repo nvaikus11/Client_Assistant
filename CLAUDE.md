@@ -7,8 +7,10 @@ Each tool is an independent agent built on the Anthropic API. The first tool is 
 More tools will be added over time, so structure must scale to many tools.
 
 ## Critical constraints
-- **Anthropic API only.** Every tool calls Claude via the Anthropic API/SDK. Do not
-  introduce other model providers, frameworks, or orchestration layers unless I ask.
+- **Claude (Anthropic) only.** Every tool reaches Claude through `shared/claude_client.py`,
+  which uses one of two Anthropic transports: the Anthropic API/SDK, or the local Claude
+  Code CLI (`claude`) for a no-API-key path. Do not introduce other model providers,
+  frameworks, or orchestration layers unless I ask.
 - **Local and isolated.** This runs on my machine as standalone code. Do NOT add AWS,
   cloud deployment, client infrastructure, Docker, or serverless. The client's platform
   is theirs; this project never touches it.

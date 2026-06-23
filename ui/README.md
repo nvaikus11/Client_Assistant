@@ -2,7 +2,8 @@
 
 A local [Streamlit](https://streamlit.io/) **chat** app for running the tools
 without the command line. Runs entirely on your machine (localhost); the only
-network calls are to the Anthropic API during the conversation.
+network calls are to Claude (via the Anthropic API or your local Claude Code) during
+the conversation.
 
 ## Run
 
@@ -10,6 +11,26 @@ network calls are to the Anthropic API during the conversation.
 pip install -r requirements.txt        # first time (installs streamlit)
 streamlit run ui/app.py                 # opens http://localhost:8501
 ```
+
+## Backends — with or without an API key
+
+The app shows its active backend at the top. It auto-detects:
+
+| You have… | Backend used | Cost |
+|---|---|---|
+| `ANTHROPIC_API_KEY` in `.env` | **Anthropic API** | metered (cents per run) |
+| no key, but the **`claude` CLI** installed | **Claude Code** (your existing login/license) | none beyond your Claude Code plan |
+
+So to run the UI **without paying for the API**, just install Claude Code (`claude`),
+leave `ANTHROPIC_API_KEY` blank, and start the app — it routes generation through the
+local `claude` command. Force a backend with `EIA_BACKEND=api` or `EIA_BACKEND=cli`
+in `.env`.
+
+Notes on the Claude Code backend:
+- Run `streamlit run ui/app.py` from a **normal terminal**, not from inside a Claude
+  Code session (nested sessions are blocked).
+- Replies are **not** streamed token-by-token (the CLI returns the whole answer), so
+  you'll see a spinner during generation instead of live text.
 
 ## What it does
 
